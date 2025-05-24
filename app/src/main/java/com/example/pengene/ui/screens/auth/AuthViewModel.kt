@@ -36,7 +36,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun setEmail(email: String) {
-        _email.value = email
+        _email.value = email.trim()
     }
 
     fun setPassword(password: String) {
@@ -71,8 +71,12 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
-            logoutUseCase()
-            _authState.value = AuthState.Unauthenticated
+            val result = logoutUseCase()
+            _authState.value = if (result.isSuccess) {
+                AuthState.Unauthenticated
+            } else {
+                AuthState.Error("Logout gagal")
+            }
         }
     }
 

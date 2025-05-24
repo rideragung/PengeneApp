@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.pengene.domain.model.AuthState
 import com.example.pengene.domain.model.WishlistItem
 import com.example.pengene.ui.components.WishlistItemCard
 import com.example.pengene.ui.screens.auth.AuthViewModel
@@ -32,6 +33,14 @@ fun WishlistScreen(
     val wishlistItems by wishlistViewModel.wishlistItems.collectAsStateWithLifecycle()
     val isLoading by wishlistViewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by wishlistViewModel.errorMessage.collectAsStateWithLifecycle()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
+
+    // Pantau perubahan state autentikasi
+    LaunchedEffect(authState) {
+        if (authState == AuthState.Unauthenticated) {
+            onLogout() // Ini akan memicu navigasi ke layar login
+        }
+    }
 
     WishlistScreenContent(
         wishlistItems = wishlistItems,
@@ -42,8 +51,7 @@ fun WishlistScreen(
         onDeleteItem = { wishlistViewModel.deleteWishlistItem(it) },
         onTogglePurchased = { wishlistViewModel.togglePurchased(it) },
         onLogout = {
-            authViewModel.logout()
-            onLogout()
+            authViewModel.logout() // Hapus pemanggilan onLogout() dari sini
         }
     )
 }
