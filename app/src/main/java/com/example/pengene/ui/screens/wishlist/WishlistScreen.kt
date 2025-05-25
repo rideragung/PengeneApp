@@ -145,12 +145,18 @@ private fun WishlistScreenContent(
                     }
                 }
                 else -> {
+                    // Sorting items: place unpurchased items at the top
+                    val sortedItems = wishlistItems.sortedWith(compareBy { it.isPurchased })
+                    
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(wishlistItems) { item ->
+                        items(
+                            items = sortedItems,
+                            key = { it.id } // Using item.id as key for better animation
+                        ) { item ->
                             WishlistItemCard(
                                 item = item,
                                 onEdit = { onNavigateToEdit(item.id) },

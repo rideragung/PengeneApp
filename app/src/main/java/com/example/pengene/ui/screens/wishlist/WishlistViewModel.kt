@@ -191,6 +191,10 @@ class WishlistViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Mengganti status pembelian item wishlist tanpa menampilkan loading indicator
+     * untuk pengalaman pengguna yang lebih mulus
+     */
     fun togglePurchased(item: WishlistItem) {
         viewModelScope.launch {
             try {
@@ -205,8 +209,7 @@ class WishlistViewModel @Inject constructor(
                     _wishlistItems.value = currentItems
                 }
                 
-                // Kemudian kirim update ke backend
-                _isLoading.value = true
+                // Kirim update ke backend tanpa mengubah loading state
                 val result = updateWishlistItemUseCase(updatedItem)
                 
                 if (!result.isSuccess) {
@@ -231,9 +234,8 @@ class WishlistViewModel @Inject constructor(
                     revertItems[revertIndex] = item
                     _wishlistItems.value = revertItems
                 }
-            } finally {
-                _isLoading.value = false
             }
+            // Tidak perlu mengatur loading state sama sekali untuk operasi ini
         }
     }
 

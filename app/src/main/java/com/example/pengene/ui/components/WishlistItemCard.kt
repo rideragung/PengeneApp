@@ -104,7 +104,8 @@ fun WishlistItemCard(
                     label = {
                         Text(
                             text = if (item.isPurchased) "Sudah Dibeli" else "Belum Dibeli",
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (!item.isPurchased) FontWeight.SemiBold else FontWeight.Normal
                         )
                     },
                     selected = item.isPurchased,
@@ -116,7 +117,12 @@ fun WishlistItemCard(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
-                    } else null
+                    } else null,
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
