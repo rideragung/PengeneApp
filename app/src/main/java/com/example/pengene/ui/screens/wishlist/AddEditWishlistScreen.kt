@@ -41,6 +41,7 @@ fun AddEditWishlistScreen(
     val description by viewModel.description.collectAsStateWithLifecycle()
     val selectedImageUri by viewModel.selectedImageUri.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val editingItem by viewModel.editingItem.collectAsStateWithLifecycle()
 
@@ -56,9 +57,8 @@ fun AddEditWishlistScreen(
     // Initialize editing mode
     LaunchedEffect(itemId) {
         if (itemId != null) {
-            // Find and load item for editing
-            // In a real app, you might need to load the specific item
-            // For now, we'll assume the item is already loaded
+            // Load the specific item for editing
+            viewModel.loadWishlistItemById(itemId)
         } else {
             viewModel.clearForm()
         }
@@ -137,7 +137,7 @@ fun AddEditWishlistScreen(
                 onValueChange = viewModel::setItemName,
                 label = { Text("Nama Barang *") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading,
+                enabled = !isSaving,
                 isError = itemName.isBlank() && errorMessage != null
             )
 
@@ -148,7 +148,7 @@ fun AddEditWishlistScreen(
                 label = { Text("Perkiraan Harga") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading,
+                enabled = !isSaving,
                 placeholder = { Text("Contoh: 150000") }
             )
 
@@ -158,7 +158,7 @@ fun AddEditWishlistScreen(
                 onValueChange = viewModel::setDescription,
                 label = { Text("Deskripsi") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading,
+                enabled = !isSaving,
                 minLines = 3,
                 maxLines = 5,
                 placeholder = { Text("Deskripsi tambahan tentang barang ini...") }
@@ -185,9 +185,9 @@ fun AddEditWishlistScreen(
                     viewModel.saveWishlistItem()
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading && itemName.isNotBlank()
+                enabled = !isSaving && itemName.isNotBlank()
             ) {
-                if (isLoading) {
+                if (isSaving) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         color = MaterialTheme.colorScheme.onPrimary
@@ -200,15 +200,15 @@ fun AddEditWishlistScreen(
     }
 
     // Handle save success
-    val previousLoading = remember { mutableStateOf(false) }
+    val previousSaving = remember { mutableStateOf(false) }
     
-    LaunchedEffect(isLoading, errorMessage) {
-        // Check if we just finished loading and there's no error
-        if (previousLoading.value && !isLoading && errorMessage == null) {
+    LaunchedEffect(isSaving, errorMessage) {
+        // Check if we just finished saving and there's no error
+        if (previousSaving.value && !isSaving && errorMessage == null) {
             // This means the save operation completed successfully
             kotlinx.coroutines.delay(300)
             onSaveSuccess()
         }
-        previousLoading.value = isLoading
+        previousSaving.value = isSaving
     }
 }

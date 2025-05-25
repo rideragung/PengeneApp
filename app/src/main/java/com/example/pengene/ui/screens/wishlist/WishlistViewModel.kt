@@ -29,6 +29,9 @@ class WishlistViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
@@ -96,14 +99,14 @@ class WishlistViewModel @Inject constructor(
 
     fun saveWishlistItem() {
         viewModelScope.launch {
-            _isLoading.value = true
+            _isSaving.value = true
             _errorMessage.value = null
 
             try {
                 // Validate item name
                 if (itemName.value.isBlank()) {
                     _errorMessage.value = "Nama barang tidak boleh kosong"
-                    _isLoading.value = false
+                    _isSaving.value = false
                     return@launch
                 }
                 
@@ -111,7 +114,7 @@ class WishlistViewModel @Inject constructor(
                 val price = if (estimatedPrice.value.isNotBlank()) {
                     estimatedPrice.value.toDoubleOrNull() ?: run {
                         _errorMessage.value = "Format harga tidak valid"
-                        _isLoading.value = false
+                        _isSaving.value = false
                         return@launch
                     }
                 } else null
@@ -126,12 +129,12 @@ class WishlistViewModel @Inject constructor(
                             imageUrl = uploadResult.getOrNull()
                         } else {
                             _errorMessage.value = "Gagal upload gambar: ${uploadResult.exceptionOrNull()?.message ?: "Terjadi kesalahan saat upload gambar"}"
-                            _isLoading.value = false
+                            _isSaving.value = false
                             return@launch
                         }
                     } catch (e: Exception) {
                         _errorMessage.value = "Gagal upload gambar: ${e.message ?: "Terjadi kesalahan saat upload gambar"}"
-                        _isLoading.value = false
+                        _isSaving.value = false
                         return@launch
                     }
                 }
@@ -168,7 +171,7 @@ class WishlistViewModel @Inject constructor(
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Terjadi kesalahan"
             } finally {
-                _isLoading.value = false
+                _isSaving.value = false
             }
         }
     }
@@ -198,5 +201,30 @@ class WishlistViewModel @Inject constructor(
 
     fun clearError() {
         _errorMessage.value = null
+    }
+    
+    fun loadWishlistItemById(itemId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            
+            // Pastikan data wishlist sudah dimuat terlebih dahulu
+            getWishlistItemsUseCase().collect { items -> 
+                // Update wishlist items terlebih dahulu
+                _wishlistItems.value = items
+                
+                // Sekarang cari item berdasarkan ID
+                val item = items.find { it.id == itemId }
+                if (item != null) {
+                    // Start editing dengan item yang ditemukan
+                    startEditing(item)
+                    _isLoading.value = false
+                    return@collect
+                } else {
+                    // Item tidak ditemukan, tampilkan error
+                    _errorMessage.value = "Item tidak ditemukan (ID: $itemId)"
+                    _isLoading.value = false
+                }
+            }
+        }
     }
 }
