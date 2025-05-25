@@ -193,9 +193,47 @@ class WishlistViewModel @Inject constructor(
 
     fun togglePurchased(item: WishlistItem) {
         viewModelScope.launch {
-            val updatedItem = item.copy(isPurchased = !item.isPurchased)
-            updateWishlistItemUseCase(updatedItem)
-            loadWishlistItems()
+            try {
+                // Langsung update UI terlebih dahulu (optimistic update)
+                val updatedItem = item.copy(isPurchased = !item.isPurchased)
+                
+                // Update lokal list untuk UI yang responsif
+                val currentItems = _wishlistItems.value.toMutableList()
+                val index = currentItems.indexOfFirst { it.id == item.id }
+                if (index != -1) {
+                    currentItems[index] = updatedItem
+                    _wishlistItems.value = currentItems
+                }
+                
+                // Kemudian kirim update ke backend
+                _isLoading.value = true
+                val result = updateWishlistItemUseCase(updatedItem)
+                
+                if (!result.isSuccess) {
+                    // Jika gagal, kembalikan state sebelumnya dan tampilkan error
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Gagal mengubah status pembelian"
+                    
+                    // Kembalikan UI ke state sebelumnya
+                    val revertItems = _wishlistItems.value.toMutableList()
+                    val revertIndex = revertItems.indexOfFirst { it.id == item.id }
+                    if (revertIndex != -1) {
+                        revertItems[revertIndex] = item // Gunakan item asli (sebelum diubah)
+                        _wishlistItems.value = revertItems
+                    }
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Terjadi kesalahan saat mengubah status pembelian"
+                
+                // Jika terjadi exception, pastikan UI dikembalikan ke state awal
+                val revertItems = _wishlistItems.value.toMutableList()
+                val revertIndex = revertItems.indexOfFirst { it.id == item.id }
+                if (revertIndex != -1) {
+                    revertItems[revertIndex] = item
+                    _wishlistItems.value = revertItems
+                }
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
