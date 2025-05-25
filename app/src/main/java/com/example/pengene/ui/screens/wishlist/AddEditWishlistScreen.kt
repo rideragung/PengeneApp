@@ -1,6 +1,7 @@
 package com.example.pengene.ui.screens.wishlist
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -17,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -25,6 +25,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -34,18 +36,18 @@ fun AddEditWishlistScreen(
     onSaveSuccess: () -> Unit,
     viewModel: WishlistViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-
     val itemName by viewModel.itemName.collectAsStateWithLifecycle()
     val estimatedPrice by viewModel.estimatedPrice.collectAsStateWithLifecycle()
     val description by viewModel.description.collectAsStateWithLifecycle()
     val selectedImageUri by viewModel.selectedImageUri.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
-    val editingItem by viewModel.editingItem.collectAsStateWithLifecycle()
 
     val isEditing = itemId != null
+    
+    // State untuk mencegah multiple back press terlalu cepat
+    var isBackButtonEnabled by remember { mutableStateOf(true) }
+    val coroutineScope = rememberCoroutineScope()
 
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -63,6 +65,26 @@ fun AddEditWishlistScreen(
             viewModel.clearForm()
         }
     }
+    
+    // Handler untuk tombol back dengan debounce
+    val handleBackPress: () -> Unit = {
+        if (isBackButtonEnabled) {
+            isBackButtonEnabled = false
+            onNavigateBack()
+            // Re-enable back button after delay
+            coroutineScope.launch {
+                delay(300) // Delay 300ms sebelum tombol back bisa ditekan lagi
+                isBackButtonEnabled = true
+            }
+        }
+    }
+    
+    // Handle system back button press with debounce
+    BackHandler(enabled = isBackButtonEnabled) {
+        handleBackPress()
+    }
+
+
 
     Scaffold(
         topBar = {
@@ -74,7 +96,10 @@ fun AddEditWishlistScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(
+                        onClick = handleBackPress,
+                        enabled = isBackButtonEnabled
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Kembali"
