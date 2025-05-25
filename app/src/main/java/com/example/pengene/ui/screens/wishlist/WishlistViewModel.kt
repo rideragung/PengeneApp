@@ -100,23 +100,41 @@ class WishlistViewModel @Inject constructor(
             _errorMessage.value = null
 
             try {
+                // Validate item name
+                if (itemName.value.isBlank()) {
+                    _errorMessage.value = "Nama barang tidak boleh kosong"
+                    _isLoading.value = false
+                    return@launch
+                }
+                
+                // Validate price format if provided
+                val price = if (estimatedPrice.value.isNotBlank()) {
+                    estimatedPrice.value.toDoubleOrNull() ?: run {
+                        _errorMessage.value = "Format harga tidak valid"
+                        _isLoading.value = false
+                        return@launch
+                    }
+                } else null
+                
                 var imageUrl = selectedImageUri.value
 
-                // Upload image if selected
+                // Upload image if selected and not already a URL
                 if (selectedImageUri.value != null && !selectedImageUri.value!!.startsWith("http")) {
-                    val uploadResult = uploadImageUseCase(selectedImageUri.value!!)
-                    if (uploadResult.isSuccess) {
-                        imageUrl = uploadResult.getOrNull()
-                    } else {
-                        _errorMessage.value = "Gagal upload gambar: ${uploadResult.exceptionOrNull()?.message}"
+                    try {
+                        val uploadResult = uploadImageUseCase(selectedImageUri.value!!)
+                        if (uploadResult.isSuccess) {
+                            imageUrl = uploadResult.getOrNull()
+                        } else {
+                            _errorMessage.value = "Gagal upload gambar: ${uploadResult.exceptionOrNull()?.message ?: "Terjadi kesalahan saat upload gambar"}"
+                            _isLoading.value = false
+                            return@launch
+                        }
+                    } catch (e: Exception) {
+                        _errorMessage.value = "Gagal upload gambar: ${e.message ?: "Terjadi kesalahan saat upload gambar"}"
                         _isLoading.value = false
                         return@launch
                     }
                 }
-
-                val price = if (estimatedPrice.value.isNotBlank()) {
-                    estimatedPrice.value.toDoubleOrNull()
-                } else null
 
                 val item = if (editingItem.value != null) {
                     editingItem.value!!.copy(
@@ -141,8 +159,9 @@ class WishlistViewModel @Inject constructor(
                 }
 
                 if (result.isSuccess) {
-                    clearForm()
+                    // Success - clear form and reload items
                     loadWishlistItems()
+                    clearForm()
                 } else {
                     _errorMessage.value = result.exceptionOrNull()?.message ?: "Gagal menyimpan item"
                 }

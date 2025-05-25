@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import coil3.request.error
+import coil3.request.placeholder
 
 @Composable
 fun ImagePicker(
@@ -54,6 +56,8 @@ fun ImagePicker(
                     model = ImageRequest.Builder(context)
                         .data(selectedImageUri)
                         .crossfade(true)
+                        .error(androidx.core.R.drawable.ic_call_decline)
+                        .placeholder(androidx.core.R.drawable.ic_call_answer)
                         .build(),
                     contentDescription = "Selected image",
                     modifier = Modifier
@@ -61,7 +65,8 @@ fun ImagePicker(
                         .height(200.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .clickable { imagePickerLauncher.launch("image/*") },
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    onError = { /* You could add error handling here */ }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(

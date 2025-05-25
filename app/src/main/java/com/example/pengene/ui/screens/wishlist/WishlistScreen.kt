@@ -35,6 +35,11 @@ fun WishlistScreen(
     val errorMessage by wishlistViewModel.errorMessage.collectAsStateWithLifecycle()
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
+    // Refresh wishlist items when screen is shown
+    LaunchedEffect(Unit) {
+        wishlistViewModel.loadWishlistItems()
+    }
+    
     // Pantau perubahan state autentikasi
     LaunchedEffect(authState) {
         if (authState == AuthState.Unauthenticated) {
@@ -50,8 +55,9 @@ fun WishlistScreen(
         onNavigateToEdit = onNavigateToEdit,
         onDeleteItem = { wishlistViewModel.deleteWishlistItem(it) },
         onTogglePurchased = { wishlistViewModel.togglePurchased(it) },
+        onClearError = { wishlistViewModel.clearError() },
         onLogout = {
-            authViewModel.logout() // Hapus pemanggilan onLogout() dari sini
+            authViewModel.logout() 
         }
     )
 }
@@ -66,6 +72,7 @@ private fun WishlistScreenContent(
     onNavigateToEdit: (String) -> Unit,
     onDeleteItem: (String) -> Unit,
     onTogglePurchased: (WishlistItem) -> Unit,
+    onClearError: () -> Unit,
     onLogout: () -> Unit
 ) {
     Scaffold(
@@ -157,8 +164,17 @@ private fun WishlistScreenContent(
 
             // Error handling
             errorMessage?.let { message ->
-                LaunchedEffect(message) {
-                    // Show snackbar or handle error
+                Snackbar(
+                    modifier = Modifier.padding(16.dp).align(Alignment.BottomCenter),
+                    action = {
+                        TextButton(onClick = onClearError) {
+                            Text("Tutup")
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                ) {
+                    Text(message)
                 }
             }
         }
@@ -177,6 +193,7 @@ fun WishlistScreenEmptyPreview() {
             onNavigateToEdit = {},
             onDeleteItem = {},
             onTogglePurchased = {},
+            onClearError = {},
             onLogout = {}
         )
     }
@@ -194,6 +211,7 @@ fun WishlistScreenLoadingPreview() {
             onNavigateToEdit = {},
             onDeleteItem = {},
             onTogglePurchased = {},
+            onClearError = {},
             onLogout = {}
         )
     }
@@ -236,6 +254,7 @@ fun WishlistScreenWithItemsPreview() {
             onNavigateToEdit = {},
             onDeleteItem = {},
             onTogglePurchased = {},
+            onClearError = {},
             onLogout = {}
         )
     }

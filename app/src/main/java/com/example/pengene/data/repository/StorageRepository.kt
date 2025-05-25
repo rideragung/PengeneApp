@@ -3,10 +3,10 @@ package com.example.pengene.data.repository
 import com.example.pengene.data.remote.api.SupabaseClient
 import com.example.pengene.domain.repository.IStorageRepository
 import io.github.jan.supabase.storage.storage
-import io.github.jan.supabase.storage.upload
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.net.Uri
 
 @Singleton
 class StorageRepository @Inject constructor() : IStorageRepository {
@@ -17,9 +17,16 @@ class StorageRepository @Inject constructor() : IStorageRepository {
         return try {
             val bucket = storage.from("wishlist-images")
 
-            // Convert URI to file
-            val file = File(imageUri)
-            val fileBytes = file.readBytes()
+            // Handle content URI
+            val fileBytes = if (imageUri.startsWith("content://")) {
+                // For content URIs, we need to use ContentResolver
+                val inputStream = SupabaseClient.appContext.contentResolver.openInputStream(Uri.parse(imageUri))
+                inputStream?.readBytes() ?: throw Exception("Failed to read image data")
+            } else {
+                // For file URIs or direct file paths
+                val file = File(imageUri)
+                file.readBytes()
+            }
 
             // Upload file
             bucket.upload(fileName, fileBytes)

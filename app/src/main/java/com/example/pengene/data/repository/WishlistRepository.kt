@@ -22,7 +22,11 @@ class WishlistRepository @Inject constructor() : IWishlistRepository {
             val currentUser = client.auth.currentUserOrNull()
             if (currentUser != null) {
                 val response = client.from("wishlist_items")
-                    .select(Columns.ALL)
+                    .select(Columns.ALL) {
+                        filter {
+                            eq("user_id", currentUser.id)
+                        }
+                    }
                     .decodeList<WishlistItemDto>()
 
                 val wishlistItems = response.map { dto ->
@@ -39,6 +43,8 @@ class WishlistRepository @Inject constructor() : IWishlistRepository {
                     )
                 }
                 emit(wishlistItems)
+            } else {
+                emit(emptyList())
             }
         } catch (e: Exception) {
             emit(emptyList())

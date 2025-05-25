@@ -200,15 +200,15 @@ fun AddEditWishlistScreen(
     }
 
     // Handle save success
+    val previousLoading = remember { mutableStateOf(false) }
+    
     LaunchedEffect(isLoading, errorMessage) {
-        if (!isLoading && errorMessage == null &&
-            (itemName.isNotBlank() || editingItem != null)) {
-            // Check if save was successful (you might need to add a success state)
-            // For now, we'll navigate back after a delay
-            kotlinx.coroutines.delay(500)
-            if (itemName.isBlank() && editingItem == null) {
-                onSaveSuccess()
-            }
+        // Check if we just finished loading and there's no error
+        if (previousLoading.value && !isLoading && errorMessage == null) {
+            // This means the save operation completed successfully
+            kotlinx.coroutines.delay(300)
+            onSaveSuccess()
         }
+        previousLoading.value = isLoading
     }
 }
