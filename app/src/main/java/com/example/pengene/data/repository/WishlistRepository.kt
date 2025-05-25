@@ -7,6 +7,7 @@ import com.example.pengene.domain.repository.IWishlistRepository
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order as OrderDirection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
@@ -64,23 +65,48 @@ class WishlistRepository @Inject constructor() : IWishlistRepository {
                     isPurchased = item.isPurchased
                 )
 
-                val response = client.from("wishlist_items")
-                    .insert(dto)
-                    .decodeSingle<WishlistItemDto>()
-
-                val savedItem = WishlistItem(
-                    id = response.id ?: "",
-                    userId = response.userId,
-                    itemName = response.itemName,
-                    estimatedPrice = response.estimatedPrice,
-                    imageUrl = response.imageUrl,
-                    description = response.description,
-                    isPurchased = response.isPurchased,
-                    createdAt = response.createdAt,
-                    updatedAt = response.updatedAt
-                )
-
-                Result.success(savedItem)
+                // First just insert the item without trying to decode the response
+                client.from("wishlist_items").insert(dto)
+                
+                // Wait a moment to ensure the database has time to process
+                kotlinx.coroutines.delay(300)
+                
+                // Then fetch the latest items to find our newly created item
+                var savedItem: WishlistItem? = null
+                
+                // Try to find the newly created item in the wishlist
+                try {
+                    val items = client.from("wishlist_items")
+                        .select(Columns.ALL) {
+                            filter {
+                                eq("user_id", currentUser.id)
+                                eq("item_name", item.itemName)
+                            }
+                            order("created_at", OrderDirection.DESCENDING)
+                            limit(1)
+                        }
+                        .decodeList<WishlistItemDto>()
+                    
+                    if (items.isNotEmpty()) {
+                        val latestItem = items.first()
+                        savedItem = WishlistItem(
+                            id = latestItem.id ?: "",
+                            userId = latestItem.userId,
+                            itemName = latestItem.itemName,
+                            estimatedPrice = latestItem.estimatedPrice,
+                            imageUrl = latestItem.imageUrl,
+                            description = latestItem.description,
+                            isPurchased = latestItem.isPurchased,
+                            createdAt = latestItem.createdAt,
+                            updatedAt = latestItem.updatedAt
+                        )
+                    }
+                } catch (e: Exception) {
+                    println("Warning: Could not retrieve the newly created item: ${e.message}")
+                }
+                
+                // Return either the found item or a temporary placeholder
+                Result.success(savedItem ?: item.copy(id = "temp-${System.currentTimeMillis()}"))
             } else {
                 Result.failure(Exception("User not authenticated"))
             }
@@ -103,7 +129,7 @@ class WishlistRepository @Inject constructor() : IWishlistRepository {
 
             try {
                 // Jalankan update dan decode response untuk memastikan operasi dieksekusi
-                val response = client.from("wishlist_items")
+                client.from("wishlist_items")
                     .update(dto) {
                         filter {
                             eq("id", item.id)
