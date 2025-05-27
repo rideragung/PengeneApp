@@ -112,7 +112,7 @@ class WishlistViewModel @Inject constructor(
                 
                 // Validate price format if provided
                 val price = if (estimatedPrice.value.isNotBlank()) {
-                    estimatedPrice.value.toDoubleOrNull() ?: run {
+                    estimatedPrice.value.toIntOrNull() ?: run {
                         _errorMessage.value = "Format harga tidak valid"
                         _isSaving.value = false
                         return@launch

@@ -4,7 +4,7 @@ data class WishlistItem(
     val id: String = "",
     val userId: String = "",
     val itemName: String,
-    val estimatedPrice: Double? = null,
+    val estimatedPrice: Int? = null,
     val imageUrl: String? = null,
     val description: String? = null,
     val isPurchased: Boolean = false,

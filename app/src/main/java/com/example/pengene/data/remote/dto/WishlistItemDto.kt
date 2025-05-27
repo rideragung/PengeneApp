@@ -11,7 +11,7 @@ data class WishlistItemDto(
     @SerialName("item_name")
     val itemName: String,
     @SerialName("estimated_price")
-    val estimatedPrice: Double? = null,
+    val estimatedPrice: Int? = null,
     @SerialName("image_url")
     val imageUrl: String? = null,
     val description: String? = null,
